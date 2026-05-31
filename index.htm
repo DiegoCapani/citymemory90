@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AR Camera + 3D</title>
+<title>AR Renault 4</title>
 
 <style>
   body {
@@ -44,7 +44,6 @@
 <div id="msg">Avvio camera...</div>
 <video id="video" autoplay playsinline muted></video>
 
-<!-- THREE.JS NON MODULE (più stabile) -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
@@ -54,9 +53,9 @@
 let scene, camera, renderer, controls;
 let video, videoTexture;
 
-initCamera();
+init();
 
-async function initCamera() {
+async function init() {
 
   video = document.getElementById("video");
   const msg = document.getElementById("msg");
@@ -72,15 +71,14 @@ async function initCamera() {
 
     msg.innerText = "Camera attiva ✔";
 
-    init3D();
-
   } catch (err) {
 
     console.error(err);
     msg.innerText = "Errore camera ❌";
-    init3D(); // fallback anche senza camera
 
   }
+
+  init3D();
 
 }
 
@@ -104,14 +102,15 @@ function init3D() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // LUCI
-  const light = new THREE.DirectionalLight(0xffffff, 1.5);
-  light.position.set(5, 10, 5);
-  scene.add(light);
+  // LUCI (IMPORTANTISSIMO PER VEDERE IL MODELLO)
+  const light1 = new THREE.DirectionalLight(0xffffff, 1.5);
+  light1.position.set(5, 10, 5);
+  scene.add(light1);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+  const light2 = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+  scene.add(light2);
 
-  // CONTROLS (solo rotazione, no zoom)
+  // CONTROLS (orbit umano)
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0.5, 0);
   controls.update();
@@ -122,7 +121,7 @@ function init3D() {
   controls.maxDistance = 5;
   controls.enableDamping = true;
 
-  // CARICA MODELLO
+  // MODELLO
   loadModel();
 
   animate();
@@ -136,25 +135,32 @@ function loadModel() {
   loader.load(
     "renault.glb",
 
-    function (gltf) {
+    (gltf) => {
 
-      const model = gltf.scene;
+      const car = gltf.scene;
 
-      // centra modello
-      const box = new THREE.Box3().setFromObject(model);
+      // CENTRATURA PERFETTA
+      const box = new THREE.Box3().setFromObject(car);
       const center = box.getCenter(new THREE.Vector3());
-      model.position.sub(center);
+      const size = box.getSize(new THREE.Vector3());
 
-      scene.add(model);
+      car.position.sub(center);
 
-      console.log("MODELLO CARICATO ✔");
+      // SCALA AUTOMATICA (evita invisibilità)
+      const maxSize = Math.max(size.x, size.y, size.z);
+      const scale = 3 / maxSize;
+      car.scale.setScalar(scale);
+
+      scene.add(car);
+
+      console.log("RENAULT CARICATA ✔");
 
     },
 
     undefined,
 
-    function (err) {
-      console.error("ERRORE MODELLO ❌", err);
+    (err) => {
+      console.error("ERRORE GLB ❌", err);
     }
 
   );
