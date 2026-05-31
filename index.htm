@@ -3,22 +3,39 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>3D Experience FIX</title>
+<title>3D Experience</title>
 
 <style>
   body {
     margin: 0;
     overflow: hidden;
     background: black;
+    font-family: Arial, sans-serif;
   }
 
   canvas {
     display: block;
   }
+
+  #startBtn {
+    position: absolute;
+    z-index: 10;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 16px 24px;
+    font-size: 18px;
+    border: none;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+  }
 </style>
 </head>
 
 <body>
+
+<button id="startBtn">START EXPERIENCE</button>
 
 <script type="module">
 
@@ -55,59 +72,6 @@ scene.add(light);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-/* ---------------- CAMERA LIVE (FIX SCHERMO NERO) ---------------- */
-
-const video = document.createElement("video");
-video.setAttribute("autoplay", "");
-video.setAttribute("playsinline", "");
-video.setAttribute("muted", "");
-
-navigator.mediaDevices.getUserMedia({
-  video: { facingMode: "environment" }
-})
-.then(stream => {
-  video.srcObject = stream;
-  video.play();
-})
-.catch(err => {
-  console.error("Camera error:", err);
-});
-
-/* ---------------- VIDEO TEXTURE ---------------- */
-
-const videoTexture = new THREE.VideoTexture(video);
-
-/* background camera */
-scene.background = videoTexture;
-
-/* ---------------- SUOLO INVISIBILE ---------------- */
-
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(100, 100),
-  new THREE.MeshBasicMaterial({ visible: false })
-);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
-
-/* ---------------- MODELLO ---------------- */
-
-let car;
-
-const loader = new GLTFLoader();
-
-loader.load("renault.glb", (gltf) => {
-
-  car = gltf.scene;
-
-  // centra modello
-  const box = new THREE.Box3().setFromObject(car);
-  const center = box.getCenter(new THREE.Vector3());
-  car.position.sub(center);
-
-  scene.add(car);
-
-});
-
 /* ---------------- CONTROLS ---------------- */
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -124,16 +88,78 @@ controls.maxDistance = 5;
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 
+/* ---------------- MODELLO ---------------- */
+
+let car;
+
+const loader = new GLTFLoader();
+
+/* ---------------- CAMERA START ---------------- */
+
+let video, videoTexture;
+
+async function startCamera() {
+
+  video = document.createElement("video");
+  video.setAttribute("autoplay", "");
+  video.setAttribute("playsinline", "");
+  video.setAttribute("muted", "");
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" }
+  });
+
+  video.srcObject = stream;
+  await video.play();
+
+  videoTexture = new THREE.VideoTexture(video);
+  scene.background = videoTexture;
+
+}
+
+/* ---------------- MODEL LOAD ---------------- */
+
+function loadModel() {
+
+  loader.load("renault.glb", (gltf) => {
+
+    car = gltf.scene;
+
+    const box = new THREE.Box3().setFromObject(car);
+    const center = box.getCenter(new THREE.Vector3());
+    car.position.sub(center);
+
+    scene.add(car);
+
+  });
+
+}
+
+/* ---------------- START BUTTON ---------------- */
+
+const btn = document.getElementById("startBtn");
+
+btn.addEventListener("click", async () => {
+
+  btn.style.display = "none";
+
+  await startCamera();
+  loadModel();
+
+  animate();
+
+});
+
 /* ---------------- LOOP ---------------- */
 
 function animate() {
+
   requestAnimationFrame(animate);
 
   controls.update();
   renderer.render(scene, camera);
-}
 
-animate();
+}
 
 /* ---------------- RESIZE ---------------- */
 
