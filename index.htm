@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AR Renault FULL</title>
+<title>AR DEBUG FULL</title>
 
 <style>
   body {
@@ -71,8 +71,8 @@ async function start() {
 
     msg.innerText = "Camera attiva ✔";
 
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error(err);
     msg.innerText = "Errore camera ❌";
   }
 
@@ -94,17 +94,17 @@ function init3D() {
 
   camera.position.set(0, 1.6, 6);
 
-  // RENDERER
+  // RENDER
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // LUCI (fondamentali)
-  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  // LUCI
+  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
-  const dir = new THREE.DirectionalLight(0xffffff, 1.5);
-  dir.position.set(5, 10, 5);
-  scene.add(dir);
+  const light = new THREE.DirectionalLight(0xffffff, 1.5);
+  light.position.set(5, 10, 5);
+  scene.add(light);
 
   // CONTROLS
   controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -115,7 +115,14 @@ function init3D() {
   controls.enablePan = false;
   controls.minDistance = 5;
   controls.maxDistance = 5;
-  controls.enableDamping = true;
+
+  // 🔴 TEST VISIVO (FONDAMENTALE)
+  const testCube = new THREE.Mesh(
+    new THREE.BoxGeometry(1,1,1),
+    new THREE.MeshStandardMaterial({ color: 0xff0000 })
+  );
+
+  scene.add(testCube);
 
   // MODELLO
   loadModel();
@@ -138,23 +145,13 @@ function loadModel() {
 
       const car = gltf.scene;
 
-      // 🔥 CENTRO SICURO
-      const box = new THREE.Box3().setFromObject(car);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-
-      car.position.sub(center);
-
-      // 🔥 SCALA FORZATA STABILE
-      const max = Math.max(size.x, size.y, size.z);
-      const scale = 3 / max;
-      car.scale.setScalar(scale);
-
+      // POSIZIONE SEMPLICE (NO OTTIMIZZAZIONI CHE ROMPONO)
       car.position.set(0, 0, 0);
+      car.scale.set(2, 2, 2);
 
       scene.add(car);
 
-      console.log("RENAULT VISIBILE ✔");
+      console.log("RENAULT AGGIUNTA ✔");
 
     },
 
@@ -162,15 +159,7 @@ function loadModel() {
 
     (err) => {
 
-      console.error("ERRORE GLB ❌", err);
-
-      // FALLBACK VISIVO (IMPORTANTISSIMO)
-      const cube = new THREE.Mesh(
-        new THREE.BoxGeometry(1,1,1),
-        new THREE.MeshStandardMaterial({ color: 0xff0000 })
-      );
-
-      scene.add(cube);
+      console.error("❌ ERRORE GLB:", err);
 
     }
 
@@ -182,8 +171,7 @@ function animate() {
 
   requestAnimationFrame(animate);
 
-  if (controls) controls.update();
-
+  controls.update();
   renderer.render(scene, camera);
 
 }
@@ -192,6 +180,7 @@ window.addEventListener("resize", () => {
 
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+
   renderer.setSize(window.innerWidth, window.innerHeight);
 
 });
