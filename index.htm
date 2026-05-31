@@ -1,32 +1,24 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>3D Experience</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>3D Experience FIX</title>
 
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #111;
-      font-family: Arial, sans-serif;
-    }
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+  }
 
-    #info {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      color: white;
-      z-index: 10;
-      font-size: 14px;
-      opacity: 0.7;
-    }
-  </style>
+  canvas {
+    display: block;
+  }
+</style>
 </head>
 
 <body>
-<div id="info">Gira attorno all’oggetto • Nessuno zoom</div>
 
 <script type="module">
 
@@ -37,7 +29,6 @@ import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/
 /* ---------------- SCENA ---------------- */
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111111);
 
 /* ---------------- CAMERA ---------------- */
 
@@ -48,14 +39,12 @@ const camera = new THREE.PerspectiveCamera(
   1000
 );
 
-// posizione “umana”
 camera.position.set(0, 1.6, 6);
 
 /* ---------------- RENDERER ---------------- */
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
 /* ---------------- LUCI ---------------- */
@@ -66,13 +55,37 @@ scene.add(light);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-/* ---------------- SUOLO ---------------- */
+/* ---------------- CAMERA LIVE (FIX SCHERMO NERO) ---------------- */
+
+const video = document.createElement("video");
+video.setAttribute("autoplay", "");
+video.setAttribute("playsinline", "");
+video.setAttribute("muted", "");
+
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: "environment" }
+})
+.then(stream => {
+  video.srcObject = stream;
+  video.play();
+})
+.catch(err => {
+  console.error("Camera error:", err);
+});
+
+/* ---------------- VIDEO TEXTURE ---------------- */
+
+const videoTexture = new THREE.VideoTexture(video);
+
+/* background camera */
+scene.background = videoTexture;
+
+/* ---------------- SUOLO INVISIBILE ---------------- */
 
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(100, 100),
-  new THREE.MeshStandardMaterial({ color: 0x222222 })
+  new THREE.MeshBasicMaterial({ visible: false })
 );
-
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
@@ -86,7 +99,7 @@ loader.load("renault.glb", (gltf) => {
 
   car = gltf.scene;
 
-  // centra modello (fondamentale)
+  // centra modello
   const box = new THREE.Box3().setFromObject(car);
   const center = box.getCenter(new THREE.Vector3());
   car.position.sub(center);
@@ -99,49 +112,17 @@ loader.load("renault.glb", (gltf) => {
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
-/* 🎯 centro dell’oggetto */
 controls.target.set(0, 0.5, 0);
 controls.update();
 
-/* 🚫 niente zoom */
 controls.enableZoom = false;
-
-/* 🚫 niente pan */
 controls.enablePan = false;
 
-/* 🔄 movimento fluido */
-controls.enableDamping = true;
-controls.dampingFactor = 0.08;
-
-/* 🧍 distanza fissa = “collisione morbida” */
 controls.minDistance = 5;
 controls.maxDistance = 5;
 
-/* ---------------- “COLLISIONE” AGGIUNTIVA ----------------
-   blocco altezza + limite interno sfera
--------------------------------------------------------- */
-
-function clampCamera() {
-
-  // altezza umana fissa
-  camera.position.y = 1.6;
-
-  // distanza minima dal centro (collisione oggetto)
-  const maxRadius = 5;
-
-  const offset = new THREE.Vector3();
-  offset.copy(camera.position);
-  offset.y = 0;
-
-  const dist = offset.length();
-
-  if (dist < maxRadius) return;
-
-  offset.setLength(maxRadius);
-
-  camera.position.x = offset.x;
-  camera.position.z = offset.z;
-}
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
 
 /* ---------------- LOOP ---------------- */
 
@@ -149,8 +130,6 @@ function animate() {
   requestAnimationFrame(animate);
 
   controls.update();
-  clampCamera();
-
   renderer.render(scene, camera);
 }
 
