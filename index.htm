@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AR Stable</title>
+<title>AR Renault FULL</title>
 
 <style>
   body {
@@ -52,13 +52,14 @@
 
 let scene, camera, renderer, controls;
 
-initCamera();
+start();
 
-async function initCamera() {
+async function start() {
 
   const video = document.getElementById("video");
   const msg = document.getElementById("msg");
 
+  // CAMERA
   try {
 
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -70,13 +71,12 @@ async function initCamera() {
 
     msg.innerText = "Camera attiva ✔";
 
-  } catch (err) {
-    console.error(err);
+  } catch (e) {
+    console.error(e);
     msg.innerText = "Errore camera ❌";
   }
 
   init3D();
-
 }
 
 function init3D() {
@@ -99,16 +99,12 @@ function init3D() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // LUCI (CRITICO PER VEDERE IL MODELLO)
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  // LUCI (fondamentali)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
 
   const dir = new THREE.DirectionalLight(0xffffff, 1.5);
   dir.position.set(5, 10, 5);
   scene.add(dir);
-
-  const point = new THREE.PointLight(0xffffff, 1.5);
-  point.position.set(0, 2, 2);
-  scene.add(point);
 
   // CONTROLS
   controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -125,14 +121,13 @@ function init3D() {
   loadModel();
 
   animate();
-
 }
 
 function loadModel() {
 
   const loader = new THREE.GLTFLoader();
 
-  console.log("Carico GLB...");
+  console.log("Caricamento GLB...");
 
   loader.load(
     "renault.glb",
@@ -143,20 +138,19 @@ function loadModel() {
 
       const car = gltf.scene;
 
-      // CENTRAZIONE
+      // 🔥 CENTRO SICURO
       const box = new THREE.Box3().setFromObject(car);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
 
       car.position.sub(center);
 
-      // SCALA FORZATA SICURA
+      // 🔥 SCALA FORZATA STABILE
       const max = Math.max(size.x, size.y, size.z);
       const scale = 3 / max;
       car.scale.setScalar(scale);
 
-      car.position.y = 0;
-      car.position.z = 0;
+      car.position.set(0, 0, 0);
 
       scene.add(car);
 
@@ -170,7 +164,7 @@ function loadModel() {
 
       console.error("ERRORE GLB ❌", err);
 
-      // FALLBACK VISIVO (per capire subito che scena funziona)
+      // FALLBACK VISIVO (IMPORTANTISSIMO)
       const cube = new THREE.Mesh(
         new THREE.BoxGeometry(1,1,1),
         new THREE.MeshStandardMaterial({ color: 0xff0000 })
@@ -198,7 +192,6 @@ window.addEventListener("resize", () => {
 
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-
   renderer.setSize(window.innerWidth, window.innerHeight);
 
 });
