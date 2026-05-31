@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AR FIX OGGETTO</title>
+<title>VISIBILITY TEST</title>
 
 <style>
   body {
     margin: 0;
     overflow: hidden;
+    background: black;
   }
 
   video {
@@ -22,33 +23,40 @@
   }
 
   canvas {
-    position: fixed;
+    position: fixed !important;
     top: 0;
     left: 0;
-    z-index: 1;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: block !important;
+    z-index: 10;
+    pointer-events: none;
   }
 
   #msg {
-    position: absolute;
-    z-index: 10;
+    position: fixed;
+    top: 10px;
+    left: 10px;
     color: white;
+    z-index: 20;
     font-family: Arial;
-    padding: 10px;
+    background: rgba(0,0,0,0.5);
+    padding: 8px;
   }
 </style>
 </head>
 
 <body>
 
-<div id="msg">OGGETTO FIX</div>
+<div id="msg">TEST VISIBILITÀ</div>
+
 <video id="video" autoplay playsinline muted></video>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
 
 <script>
 
-let scene, camera, renderer, controls;
+let scene, camera, renderer;
 
 start();
 
@@ -57,6 +65,7 @@ async function start() {
   const video = document.getElementById("video");
 
   try {
+
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment" }
     });
@@ -65,67 +74,47 @@ async function start() {
     await video.play();
 
   } catch (e) {
-    console.error(e);
+    console.error("CAMERA ERROR", e);
   }
 
-  init3D();
+  init();
 }
 
-function init3D() {
+function init() {
+
+  console.log("INIT 3D");
 
   scene = new THREE.Scene();
 
   camera = new THREE.PerspectiveCamera(
-    60,
+    70,
     window.innerWidth / window.innerHeight,
     0.1,
     1000
   );
 
-  camera.position.set(0, 2, 4);
+  camera.position.z = 3;
 
-  renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true
+  });
+
   renderer.setSize(window.innerWidth, window.innerHeight);
+
+  renderer.setClearColor(0x000000, 0); // trasparente
+
   document.body.appendChild(renderer.domElement);
 
-  // luce base
-  scene.add(new THREE.AmbientLight(0xffffff, 1));
+  console.log("CANVAS:", renderer.domElement);
 
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(5, 10, 5);
-  scene.add(light);
-
-  // pavimento
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(50, 50),
-    new THREE.MeshStandardMaterial({ color: 0x444444 })
-  );
-
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground);
-
-  // 🔥 OGGETTO (FORZATO VISIBILE)
+  // 🔥 CUBO INEVITABILE
   const cube = new THREE.Mesh(
     new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshBasicMaterial({ color: 0xff0000 }) // NON dipende da luci
+    new THREE.MeshBasicMaterial({ color: 0xff0000 })
   );
 
-  cube.position.set(0, 0.5, 0);   // sopra il pavimento
-  cube.scale.set(2, 2, 2);        // grande = impossibile non vederlo
-
   scene.add(cube);
-
-  // punto di riferimento extra (debug visivo)
-  const axis = new THREE.AxesHelper(2);
-  scene.add(axis);
-
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-
-  controls.target.set(0, 0.5, 0);
-  controls.update();
-
-  controls.enableZoom = false;
-  controls.enablePan = false;
 
   animate();
 }
@@ -134,7 +123,6 @@ function animate() {
 
   requestAnimationFrame(animate);
 
-  controls.update();
   renderer.render(scene, camera);
 
 }
