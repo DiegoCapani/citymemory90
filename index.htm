@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AR CORRETTO BASE</title>
+<title>AR FIX OGGETTO</title>
 
 <style>
   body {
@@ -40,7 +40,7 @@
 
 <body>
 
-<div id="msg">AR BASE</div>
+<div id="msg">OGGETTO FIX</div>
 <video id="video" autoplay playsinline muted></video>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -57,7 +57,6 @@ async function start() {
   const video = document.getElementById("video");
 
   try {
-
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment" }
     });
@@ -74,10 +73,8 @@ async function start() {
 
 function init3D() {
 
-  // SCENA
   scene = new THREE.Scene();
 
-  // CAMERA
   camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
@@ -85,21 +82,20 @@ function init3D() {
     1000
   );
 
-  camera.position.set(0, 2, 5);
+  camera.position.set(0, 2, 4);
 
-  // RENDERER
   renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // LUCI
-  scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+  // luce base
+  scene.add(new THREE.AmbientLight(0xffffff, 1));
 
-  const dir = new THREE.DirectionalLight(0xffffff, 1);
-  dir.position.set(5, 10, 5);
-  scene.add(dir);
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(5, 10, 5);
+  scene.add(light);
 
-  // 🔥 PAVIMENTO (GROUND)
+  // pavimento
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(50, 50),
     new THREE.MeshStandardMaterial({ color: 0x444444 })
@@ -108,16 +104,21 @@ function init3D() {
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
 
-  // 🔥 OGGETTO 3D
+  // 🔥 OGGETTO (FORZATO VISIBILE)
   const cube = new THREE.Mesh(
-    new THREE.BoxGeometry(1,1,1),
-    new THREE.MeshStandardMaterial({ color: 0xff0000 })
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 }) // NON dipende da luci
   );
 
-  cube.position.y = 0.5; // poggiato sul pavimento
+  cube.position.set(0, 0.5, 0);   // sopra il pavimento
+  cube.scale.set(2, 2, 2);        // grande = impossibile non vederlo
+
   scene.add(cube);
 
-  // 🔥 ORBIT CONTROLS (giro reale)
+  // punto di riferimento extra (debug visivo)
+  const axis = new THREE.AxesHelper(2);
+  scene.add(axis);
+
   controls = new THREE.OrbitControls(camera, renderer.domElement);
 
   controls.target.set(0, 0.5, 0);
