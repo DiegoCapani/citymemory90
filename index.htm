@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3D Experience</title>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      z-index: 10;
+      font-size: 14px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+
+<body>
+<div id="info">Gira attorno all’oggetto • Nessuno zoom</div>
+
+<script type="module">
+
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
+
+/* ---------------- SCENA ---------------- */
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111111);
+
+/* ---------------- CAMERA ---------------- */
+
+const camera = new THREE.PerspectiveCamera(
+  50,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
+
+// posizione “umana”
+camera.position.set(0, 1.6, 6);
+
+/* ---------------- RENDERER ---------------- */
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+document.body.appendChild(renderer.domElement);
+
+/* ---------------- LUCI ---------------- */
+
+const light = new THREE.DirectionalLight(0xffffff, 1.5);
+light.position.set(5, 10, 5);
+scene.add(light);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+
+/* ---------------- SUOLO ---------------- */
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(100, 100),
+  new THREE.MeshStandardMaterial({ color: 0x222222 })
+);
+
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+/* ---------------- MODELLO ---------------- */
+
+let car;
+
+const loader = new GLTFLoader();
+
+loader.load("renault.glb", (gltf) => {
+
+  car = gltf.scene;
+
+  // centra modello (fondamentale)
+  const box = new THREE.Box3().setFromObject(car);
+  const center = box.getCenter(new THREE.Vector3());
+  car.position.sub(center);
+
+  scene.add(car);
+
+});
+
+/* ---------------- CONTROLS ---------------- */
+
+const controls = new OrbitControls(camera, renderer.domElement);
+
+/* 🎯 centro dell’oggetto */
+controls.target.set(0, 0.5, 0);
+controls.update();
+
+/* 🚫 niente zoom */
+controls.enableZoom = false;
+
+/* 🚫 niente pan */
+controls.enablePan = false;
+
+/* 🔄 movimento fluido */
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+/* 🧍 distanza fissa = “collisione morbida” */
+controls.minDistance = 5;
+controls.maxDistance = 5;
+
+/* ---------------- “COLLISIONE” AGGIUNTIVA ----------------
+   blocco altezza + limite interno sfera
+-------------------------------------------------------- */
+
+function clampCamera() {
+
+  // altezza umana fissa
+  camera.position.y = 1.6;
+
+  // distanza minima dal centro (collisione oggetto)
+  const maxRadius = 5;
+
+  const offset = new THREE.Vector3();
+  offset.copy(camera.position);
+  offset.y = 0;
+
+  const dist = offset.length();
+
+  if (dist < maxRadius) return;
+
+  offset.setLength(maxRadius);
+
+  camera.position.x = offset.x;
+  camera.position.z = offset.z;
+}
+
+/* ---------------- LOOP ---------------- */
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  controls.update();
+  clampCamera();
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+/* ---------------- RESIZE ---------------- */
+
+window.addEventListener("resize", () => {
+
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+});
+
+</script>
+</body>
+</html>
