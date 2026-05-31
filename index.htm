@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AR Hiro Renault</title>
+<title>Renault AR Hiro</title>
 
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
@@ -20,31 +20,40 @@
 
 <a-scene
   embedded
-  arjs="sourceType: webcam; debugUIEnabled: false;"
-  renderer="antialias: true; alpha: true;"
+  vr-mode-ui="enabled: false"
+  renderer="antialias: true; alpha: true; colorManagement: true;"
+  arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
 >
 
-  <!-- CAMERA -->
-  <a-marker-camera preset="hiro">
+  <!-- LUCE REALISTICA -->
+  <a-entity light="type: ambient; intensity: 0.8"></a-entity>
+  <a-entity light="type: directional; intensity: 1" position="2 4 3"></a-entity>
 
-    <!-- SUOLO DI RIFERIMENTO -->
+  <!-- MARKER HIRO -->
+  <a-marker preset="hiro">
+
+    <!-- PIANO OMBRA (STRADA) -->
     <a-plane
       rotation="-90 0 0"
-      width="2"
-      height="2"
-      color="#444444">
+      width="3"
+      height="3"
+      material="color: #222; opacity: 0.6"
+      shadow="receive: true">
     </a-plane>
 
-    <!-- 🚗 RENAULT 4 (BOX TEMPORANEO SICURO) -->
-    <a-box
-      position="0 0.5 0"
-      depth="1"
-      height="0.5"
-      width="1"
-      color="red">
-    </a-box>
+    <!-- 🚗 RENAULT 4 -->
+    <a-entity
+      gltf-model="url(renault.glb)"
+      scale="1 1 1"
+      position="0 0 0"
+      rotation="0 180 0"
+      shadow="cast: true; receive: true"
+    ></a-entity>
 
-  </a-marker-camera>
+  </a-marker>
+
+  <!-- CAMERA AR -->
+  <a-entity camera></a-entity>
 
 </a-scene>
 
